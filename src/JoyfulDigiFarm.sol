@@ -39,28 +39,25 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
     uint32 private constant NUM_WORDS = 1;
 
     ControllerState private s_controllerState;
-    string[] private s_jdnTokenUris;
+    string[6] private s_jdnTokenUris;
     uint256 private s_tokenCounter;
     mapping(address => CurrentPlantStatus) private s_currentPlantStatus;
 
+    event RequestedRandNum(uint256 indexed requestId);
+
     constructor(
+        string[6] memory jdnTokenUris,
         address vrfCoordinatorV2,
         uint64 subscriptionId,
         bytes32 gasLane,
         uint32 callbackGasLimit
     ) VRFConsumerBaseV2(vrfCoordinatorV2) ERC721("Joyful DigiFarm NFT", "JDN") {
+        s_jdnTokenUris = jdnTokenUris;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
         i_gasLane = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
         s_tokenCounter = 0;
-    }
-
-    modifier onlyOpen() {
-        if (s_controllerState != ControllerState.OPEN) {
-            revert JoyfulDigiFarm__ControllerStateNotOpen();
-        }
-        _;
     }
 
     function mintNFT() public {
@@ -91,7 +88,6 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             );
             s_currentPlantStatus[msg.sender].nft = NFT.WILTEDPLANT;
             s_currentPlantStatus[msg.sender].isMinted = false;
-            return;
         }
 
         if (s_currentPlantStatus[msg.sender].nft == NFT.GERMINATION) {
@@ -101,6 +97,42 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             );
             s_currentPlantStatus[msg.sender].nft = NFT.MATURES;
             s_currentPlantStatus[msg.sender].lastWateredTime = block.timestamp;
-        } else {}
+        } else if (s_currentPlantStatus[msg.sender].nft == NFT.MATURES) {
+            if (s_controllerState != ControllerState.OPEN) {
+                revert JoyfulDigiFarm__ControllerStateNotOpen();
+            }
+            s_controllerState = ControllerState.CALCULATING;
+            uint256 requestId = i_vrfCoordinator.requestRandomWords(
+                i_gasLane,
+                i_subscriptionId,
+                REQUEST_CONFIRMATIONS,
+                i_callbackGasLimit,
+                NUM_WORDS
+            );
+            emit RequestedRandNum(requestId);
+        }
+    }
+
+    function fulfillRandomWords(
+        uint256 /* requestId*/,
+        uint256[] memory randomWords
+    ) internal override {
+        uint8 randNum = uint8(randomWords[0] % 3);
+        _setTokenURI(
+            s_currentPlantStatus[msg.sender].tokenId,
+            s_jdnTokenUris[uint8(getIndex(randNum))]
+        );
+        s_currentPlantStatus[msg.sender].isMinted = false;
+        s_controllerState = ControllerState.OPEN;
+    }
+
+    function getIndex(uint8 randNum) private pure returns (NFT) {
+        if (randNum == 0) {
+            return NFT.VIOLET;
+        } else if (randNum == 1) {
+            return NFT.SUNFLOWER;
+        } else {
+            return NFT.LOTUS;
+        }
     }
 }

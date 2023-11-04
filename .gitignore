@@ -1,5 +1,5 @@
 .env
-foundry/broadcast
-foundry/cache
-foundry/out
-foundry/coverage.txt
+broadcast
+cache
+out
+coverage.txt
