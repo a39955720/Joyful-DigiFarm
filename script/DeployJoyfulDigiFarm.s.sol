@@ -7,15 +7,15 @@ import {JoyfulDigiFarm} from "../src/JoyfulDigiFarm.sol";
 contract DeployJoyfulDigiFarm is Script {
     // Define an array of IPFS URIs for the CCN token Uris
     string[6] jdnTokenUris = [
-        "ipfs://QmeaFmg8GYNMkpc9HkP54pVDzHXtCDMrDhUPEeKPK36vWf",
-        "ipfs://Qmc3XjaKwSgRDNPATfxr5RpkJT3qofG8r9WFFsuZCsxjGg",
-        "ipfs://QmS9rcwku5G3s7c4NhJVqyy5kBkUryjzPuscKG49vAehS5",
-        "ipfs://QmVAvLknEzdcNjJjcNCd6Y1yaHvmTThcLVRLE1v1LADCgD",
-        "ipfs://QmUa1dzt5C2RYTQyBun3k4PvyPSjDCeZ7RsU5U83Fto3LW",
-        "ipfs://QmQJT1L5TgjwzzF3K4AfzrFJ8jiWp2TLs4RZQpFRe8VYxb"
+        "ipfs://QmRZtjUVePYYQRZYrVemuhZKphjTjZWaxgDBLU2Mk7fyNz",
+        "ipfs://QmQ3uzTAgZD95dNNDemTPH2wHseLThaRkshfzXYjfix5zf",
+        "ipfs://QmXDsTQDHBcCxwBPt39JHheT1Mnmdmnm6bdnpus93DMP1T",
+        "ipfs://QmXiG54CPssgkWLS3ZT85HsiHdifUoC61aP1JAFzd17iHT",
+        "ipfs://QmexkesvvjyEK26Wzu7zkDBSgbDmrkBXRCYQ3tDmXR8EzQ",
+        "ipfs://QmUXYKy95gdTMBtuV4WLb5wY4t66MMewDBks84T7v3jfVM"
     ];
 
-    uint64 subscriptionId = 224;
+    uint64 subscriptionId = 226;
     bytes32 gasLane =
         0x83d1b6e3388bed3d76426974512bb0d270e9542a765cd667242ea26c0cc0b730;
     uint32 callbackGasLimit = 500000;

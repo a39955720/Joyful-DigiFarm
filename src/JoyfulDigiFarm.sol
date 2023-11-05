@@ -41,9 +41,11 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
     ControllerState private s_controllerState;
     string[6] private s_jdnTokenUris;
     uint256 private s_tokenCounter;
+    address private s_msgSender;
     mapping(address => CurrentPlantStatus) private s_currentPlantStatus;
 
     event RequestedRandNum(uint256 indexed requestId);
+    event FulfillRandomWords(uint256 indexed randNum);
 
     constructor(
         string[6] memory jdnTokenUris,
@@ -101,6 +103,7 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             if (s_controllerState != ControllerState.OPEN) {
                 revert JoyfulDigiFarm__ControllerStateNotOpen();
             }
+            s_msgSender = msg.sender;
             s_controllerState = ControllerState.CALCULATING;
             uint256 requestId = i_vrfCoordinator.requestRandomWords(
                 i_gasLane,
@@ -119,11 +122,12 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
     ) internal override {
         uint8 randNum = uint8(randomWords[0] % 3);
         _setTokenURI(
-            s_currentPlantStatus[msg.sender].tokenId,
+            s_currentPlantStatus[s_msgSender].tokenId,
             s_jdnTokenUris[uint8(getIndex(randNum))]
         );
-        s_currentPlantStatus[msg.sender].isMinted = false;
+        s_currentPlantStatus[s_msgSender].isMinted = false;
         s_controllerState = ControllerState.OPEN;
+        emit FulfillRandomWords(randNum);
     }
 
     function getIndex(uint8 randNum) private pure returns (NFT) {
