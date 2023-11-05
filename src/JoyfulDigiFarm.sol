@@ -4,10 +4,13 @@ pragma solidity ^0.8.21;
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import {ERC721URIStorage, ERC721} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
 error JoyfulDigiFarm__ControllerStateNotOpen();
 error JoyfulDigiFarm__YouHaveAlreadyMintedPleaseWaterItFirst();
 error JoyfulDigiFarm__PleaseMintNFTFirst();
+error JoyfulDigiFarm__MustBloomToTransfer();
 
 contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
     enum ControllerState {
@@ -43,6 +46,7 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
     uint256 private s_tokenCounter;
     address private s_msgSender;
     mapping(address => CurrentPlantStatus) private s_currentPlantStatus;
+    mapping(uint256 => bool) s_isBloomed;
 
     event RequestedRandNum(uint256 indexed requestId);
     event FulfillRandomWords(uint256 indexed randNum);
@@ -103,8 +107,8 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             if (s_controllerState != ControllerState.OPEN) {
                 revert JoyfulDigiFarm__ControllerStateNotOpen();
             }
-            s_msgSender = msg.sender;
             s_controllerState = ControllerState.CALCULATING;
+            s_msgSender = msg.sender;
             uint256 requestId = i_vrfCoordinator.requestRandomWords(
                 i_gasLane,
                 i_subscriptionId,
@@ -126,6 +130,7 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             s_jdnTokenUris[uint8(getIndex(randNum))]
         );
         s_currentPlantStatus[s_msgSender].isMinted = false;
+        s_isBloomed[s_currentPlantStatus[s_msgSender].tokenId] = true;
         s_controllerState = ControllerState.OPEN;
         emit FulfillRandomWords(randNum);
     }
@@ -137,6 +142,31 @@ contract JoyfulDigiFarm is ERC721URIStorage, VRFConsumerBaseV2 {
             return NFT.SUNFLOWER;
         } else {
             return NFT.LOTUS;
+        }
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public virtual override(ERC721, IERC721) {
+        if (s_isBloomed[tokenId] == true) {
+            super.safeTransferFrom(from, to, tokenId, data);
+        } else {
+            revert JoyfulDigiFarm__MustBloomToTransfer();
+        }
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override(ERC721, IERC721) {
+        if (s_isBloomed[tokenId] == true) {
+            super.transferFrom(from, to, tokenId);
+        } else {
+            revert JoyfulDigiFarm__MustBloomToTransfer();
         }
     }
 }
